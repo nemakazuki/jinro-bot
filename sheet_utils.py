@@ -5,7 +5,9 @@ from datetime import datetime
 # 認証とシート接続
 def connect_sheet():
     scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+
+    creds_dict = json.loads(os.environ.get('GOOGLE_CREDENTIALS'))
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
     sheet = client.open("jinro_game").worksheet("プレイヤー一覧")
     return sheet
