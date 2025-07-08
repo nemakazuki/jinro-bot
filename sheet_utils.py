@@ -1,0 +1,17 @@
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
+
+# 認証とシート接続
+def connect_sheet():
+    scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+    client = gspread.authorize(creds)
+    sheet = client.open("jinro_game").worksheet("プレイヤー一覧")
+    return sheet
+
+# 登録処理
+def register_player(name, user_id):
+    sheet = connect_sheet()
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    sheet.append_row([name, user_id, now])
