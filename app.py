@@ -27,11 +27,19 @@ def callback():
 # メッセージ受信時の処理
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    received_text = event.message.text
-    reply_text = f"あなたが送ったメッセージ：{received_text}"
+    msg = event.message.text.strip()
+    user_id = event.source.user_id
+
+    if msg.startswith("/register"):
+        name = msg.replace("/register", "").strip()
+        register_player(name, user_id)
+        reply = f"{name}さんを登録しました。"
+    else:
+        reply = f"あなたのメッセージ：{msg}"
+
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=reply_text)
+        TextSendMessage(text=reply)
     )
 
 import os
