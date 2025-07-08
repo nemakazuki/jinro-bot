@@ -30,8 +30,8 @@ def handle_message(event):
     msg = event.message.text.strip()
     user_id = event.source.user_id
 
-    if msg.startswith("/register"):
-        name = msg.replace("/register", "").strip()
+    if msg.startswith("/add"):
+        name = msg.replace("/add", "").strip()
         register_player(name, user_id)
         reply = f"{name}さんを登録しました。"
     else:
