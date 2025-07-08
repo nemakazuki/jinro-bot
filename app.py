@@ -25,6 +25,8 @@ def callback():
     return 'OK'
 
 # メッセージ受信時の処理
+from sheet_utils import register_player  # または関数を同じファイルに直接書く
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     msg = event.message.text.strip()
