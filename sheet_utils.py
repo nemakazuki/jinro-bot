@@ -3,6 +3,7 @@ import json
 import gspread
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
+from linebot.models import TextSendMessage
 
 # Google Sheets クライアント接続
 def connect_client():
@@ -119,10 +120,12 @@ def assign_roles_and_notify(line_bot_api):
         line_bot_api.push_message(user_id, TextSendMessage(text=message))
 
     # ⑥ 一括更新（D列〜G列）
-    cell_list = player_sheet.range(f'D2:G{len(user_ids)+1}')
-    for i, update in enumerate(updates):
-        cell_list[i*4 + 0].value = update["values"][0]  # D列
-        cell_list[i*4 + 1].value = update["values"][1]  # E列
-        cell_list[i*4 + 2].value = update["values"][2]  # F列
-        cell_list[i*4 + 3].value = update["values"][3]  # G列
+    row_count = len(user_ids)
+    cell_list = player_sheet.range(f'D2:G{row_count+1}')
+    for i in range(row_count):
+        role_values = updates[i]["values"]
+        cell_list[i * 4 + 0].value = role_values[0]
+        cell_list[i * 4 + 1].value = role_values[1]
+        cell_list[i * 4 + 2].value = role_values[2]
+        cell_list[i * 4 + 3].value = role_values[3]
     player_sheet.update_cells(cell_list)
