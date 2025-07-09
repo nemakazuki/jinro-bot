@@ -34,6 +34,7 @@ def handle_message(event):
 
     if msg.startswith("/add"):
         name = msg.replace("/add", "").strip()
+        print(f"登録試行中：{name} / {user_id}")  # ← 追加
         register_player(name, user_id)
         reply = f"{name}さんを登録しました。"
     else:
