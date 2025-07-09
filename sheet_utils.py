@@ -72,7 +72,7 @@ def assign_roles_and_notify(line_bot_api):
     num_humans = total_players - num_werewolves - num_third_party
 
     # ②役職一覧を取得・分類
-    role_numbers = role_sheet.col_values(0)[1:]
+   role_numbers = role_sheet.col_values(1)[1:]
     roles = {
         'werewolf': [],
         'human': [],
