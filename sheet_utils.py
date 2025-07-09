@@ -53,3 +53,66 @@ def get_name_by_user_id(user_id):
         if uid == user_id:
             return name
     return None
+
+
+import random
+
+def assign_roles_and_notify(line_bot_api):
+    client = connect_client()
+    setting_sheet = client.open("jinro_game").worksheet("設定")
+    role_sheet = client.open("jinro_game").worksheet("役職一覧")
+    player_sheet = client.open("jinro_game").worksheet("プレイヤー一覧")
+
+    # ①設定値取得
+    num_werewolves = int(setting_sheet.acell("B1").value)
+    num_third_party = int(setting_sheet.acell("B2").value)
+    player_names = player_sheet.col_values(1)[1:]
+    user_ids = player_sheet.col_values(2)[1:]
+    total_players = len(player_names)
+    num_humans = total_players - num_werewolves - num_third_party
+
+    # ②役職一覧を取得・分類
+    role_numbers = role_sheet.col_values(0)[1:]
+    roles = {
+        'werewolf': [],
+        'human': [],
+        'third': []
+    }
+    for i in range(1, len(role_numbers)+1):
+        role_id = int(role_sheet.cell(i+1, 1).value)
+        role_name = role_sheet.cell(i+1, 2).value
+        role_desc = role_sheet.cell(i+1, 3).value
+        role_adv = role_sheet.cell(i+1, 4).value
+        role_data = (role_id, role_name, role_desc, role_adv)
+        if 100 <= role_id < 200:
+            roles['werewolf'].append(role_data)
+        elif 200 <= role_id < 300:
+            roles['human'].append(role_data)
+        elif 300 <= role_id < 400:
+            roles['third'].append(role_data)
+
+    # ③役職をシャッフルして選出
+    random.shuffle(roles['werewolf'])
+    random.shuffle(roles['human'])
+    random.shuffle(roles['third'])
+    selected_roles = (
+        roles['werewolf'][:num_werewolves] +
+        roles['third'][:num_third_party] +
+        roles['human'][:num_humans]
+    )
+    if len(selected_roles) != total_players:
+        raise ValueError("役職の人数とプレイヤー人数が一致しません。")
+
+    # ④割り当て
+    random.shuffle(selected_roles)
+    for idx, (name, uid) in enumerate(zip(player_names, user_ids)):
+        role_id, role_name, role_desc, role_adv = selected_roles[idx]
+        row = idx + 2  # 2行目から始まる
+        player_sheet.update_cell(row, 4, role_id)
+        player_sheet.update_cell(row, 5, role_name)
+        player_sheet.update_cell(row, 6, role_desc)
+        player_sheet.update_cell(row, 7, role_adv)
+
+        # ⑤通知
+        message = f"あなたの役職は「{role_name}」です。\n\n説明：{role_desc}\n\nアドバイス：{role_adv}"
+        line_bot_api.push_message(uid, TextSendMessage(text=message))
