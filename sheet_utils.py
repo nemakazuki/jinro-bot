@@ -118,10 +118,10 @@ def assign_roles_and_notify(line_bot_api):
 
     # ⑥ 一括更新（D列〜G列）
     cell_list = player_sheet.range(f'D2:G{len(user_ids)+1}')
-    for idx, update in enumerate(updates):
-        base = idx * 4
-        cell_list[base].value = update["values"][0]
-        cell_list[base+1].value = update["values"][1]
-        cell_list[base+2].value = update["values"][2]
-        cell_list[base+3].value = update["values"][3]
+    for i, update in enumerate(updates):
+        row_offset = i * 4
+        cell_list[row_offset + 0].value = update["values"][0]  # D列
+        cell_list[row_offset + 1].value = update["values"][1]  # E列
+        cell_list[row_offset + 2].value = update["values"][2]  # F列
+        cell_list[row_offset + 3].value = update["values"][3]  # G列
     player_sheet.update_cells(cell_list)
