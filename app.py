@@ -3,7 +3,10 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
-from sheet_utils import register_player, connect_sheet  # ✅ ここで関数をimport
+from sheet_utils import (
+    register_player, connect_sheet, set_night_mode, get_night_mode,
+    get_name_by_user_id, record_night_action
+)
 
 LINE_CHANNEL_ACCESS_TOKEN = 'vpQX3ZT9bYa423omRNdulSxr4JekFoH9F2tG2DCgOAwqfMpMDgg+qw86kymh/EyywUAwpnfhzTQ3nB+1jzBrLqERaDWkVb2PhVNlTR1mEWPbPz7AaDMwQR/iSQdxlOcPIMis8tWeVbKslLMVTcsrUgdB04t89/1O/w1cDnyilFU='
 LINE_CHANNEL_SECRET = '7fb356eb813fe6bab58f9c6fed071e71'
@@ -34,7 +37,6 @@ def handle_message(event):
         reply = f"{name}さんを登録しました。"
 
     elif msg == "夜":
-        # 夜モードONにする
         set_night_mode("ON")
         sheet = connect_sheet()
         players = sheet.col_values(1)[1:]
@@ -49,8 +51,15 @@ def handle_message(event):
             line_bot_api.push_message(uid, TextSendMessage(text=message_text))
         reply = "夜の行動を各プレイヤーに送信しました。"
 
+    elif msg == "/朝":
+        set_night_mode("OFF")
+        sheet = connect_sheet()
+        user_ids = sheet.col_values(2)[1:]
+        for uid in user_ids:
+            line_bot_api.push_message(uid, TextSendMessage(text="夜が明けました。議論を始めてください。"))
+        reply = "夜モードを終了しました。"
+
     else:
-        # 夜モード時のみ、行動を記録
         if get_night_mode() == "ON":
             name = get_name_by_user_id(user_id)
             if name:
@@ -62,6 +71,7 @@ def handle_message(event):
             reply = "現在は夜の行動時間ではありません。"
 
     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply))
+
 
 import os
 if __name__ == "__main__":
