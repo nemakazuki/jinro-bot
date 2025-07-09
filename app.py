@@ -36,7 +36,7 @@ def handle_message(event):
         register_player(name, user_id)
         reply = f"{name}さんを登録しました。"
 
-    elif msg == "夜":
+    elif msg == "/夜":
         set_night_mode("ON")
         sheet = connect_sheet()
         players = sheet.col_values(1)[1:]
