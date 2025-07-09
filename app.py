@@ -5,7 +5,7 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
 from sheet_utils import (
     register_player, connect_sheet, set_night_mode, get_night_mode,
-    get_name_by_user_id, record_night_action
+    get_name_by_user_id, record_night_action, assign_roles_and_notify
 )
 
 LINE_CHANNEL_ACCESS_TOKEN = 'vpQX3ZT9bYa423omRNdulSxr4JekFoH9F2tG2DCgOAwqfMpMDgg+qw86kymh/EyywUAwpnfhzTQ3nB+1jzBrLqERaDWkVb2PhVNlTR1mEWPbPz7AaDMwQR/iSQdxlOcPIMis8tWeVbKslLMVTcsrUgdB04t89/1O/w1cDnyilFU='
@@ -59,6 +59,13 @@ def handle_message(event):
             line_bot_api.push_message(uid, TextSendMessage(text="夜が明けました。議論を始めてください。"))
         reply = "夜モードを終了しました。"
 
+    elif msg == "/割り当て":
+        try:
+            assign_roles_and_notify(line_bot_api)
+            reply = "役職を割り当て、各プレイヤーに送信しました。"
+        except Exception as e:
+            reply = f"割り当て中にエラーが発生しました：{str(e)}"
+    
     else:
         if get_night_mode() == "ON":
             name = get_name_by_user_id(user_id)
