@@ -97,6 +97,7 @@ def assign_roles_and_notify(line_bot_api):
     print("B2 raw value:", setting_sheet.acell("B2").value)
     num_werewolf = parse_int_or_zero(setting_sheet.acell("B1").value)
     num_third = parse_int_or_zero(setting_sheet.acell("B2").value)
+    num_human = player_count - num_werewolf - num_third  # ← ★ これを追加！
 
 
     # ④ 役職をランダムに割り当て
