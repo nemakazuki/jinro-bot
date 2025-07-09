@@ -85,10 +85,14 @@ def assign_roles_and_notify(line_bot_api):
             roles['third'].append(role)
 
     # ③設定から人数取得（get_all_valuesを使って安全に取得）
-    settings = setting_sheet.get_all_values()
-    num_werewolf = int(settings[0][1])  # 1行目B列
-    num_third = int(settings[1][1])     # 2行目B列
-    num_human = player_count - num_werewolf - num_third
+    def parse_int_or_zero(cell_value):
+    try:
+        return int(cell_value)
+    except (ValueError, TypeError):
+        return 0
+
+    num_werewolf = parse_int_or_zero(setting_sheet.acell("B1").value)
+    num_third = parse_int_or_zero(setting_sheet.acell("B2").value)
 
 
     # ④ 役職をランダムに割り当て
