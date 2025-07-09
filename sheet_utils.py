@@ -59,25 +59,24 @@ import random
 
 def assign_roles_and_notify(line_bot_api):
     client = connect_client()
-    setting_sheet = client.open("jinro_game").worksheet("設定")
-    role_sheet = client.open("jinro_game").worksheet("役職一覧")
     player_sheet = client.open("jinro_game").worksheet("プレイヤー一覧")
+    role_sheet = client.open("jinro_game").worksheet("役職一覧")
+    setting_sheet = client.open("jinro_game").worksheet("設定")
 
-    # ①設定値取得
-    num_werewolves = int(setting_sheet.acell("B1").value)
-    num_third_party = int(setting_sheet.acell("B2").value)
-    player_names = player_sheet.col_values(1)[1:]
+    # ①プレイヤー一覧を取得
+    names = player_sheet.col_values(1)[1:]
     user_ids = player_sheet.col_values(2)[1:]
-    total_players = len(player_names)
-    num_humans = total_players - num_werewolves - num_third_party
+    player_count = len(names)
 
     # ②役職一覧を取得・分類
-   role_numbers = role_sheet.col_values(1)[1:]
+    role_numbers = role_sheet.col_values(1)[1:]
+
     roles = {
         'werewolf': [],
         'human': [],
         'third': []
     }
+
     for i in range(1, len(role_numbers)+1):
         role_id = int(role_sheet.cell(i+1, 1).value)
         role_name = role_sheet.cell(i+1, 2).value
@@ -91,28 +90,36 @@ def assign_roles_and_notify(line_bot_api):
         elif 300 <= role_id < 400:
             roles['third'].append(role_data)
 
-    # ③役職をシャッフルして選出
+    # ③設定から人数取得
+    num_werewolf = int(setting_sheet.acell("B1").value)
+    num_third = int(setting_sheet.acell("B2").value)
+    num_human = player_count - num_werewolf - num_third
+
+    # ④役職割り当て
+    import random
     random.shuffle(roles['werewolf'])
     random.shuffle(roles['human'])
     random.shuffle(roles['third'])
-    selected_roles = (
-        roles['werewolf'][:num_werewolves] +
-        roles['third'][:num_third_party] +
-        roles['human'][:num_humans]
+
+    assigned_roles = (
+        roles['werewolf'][:num_werewolf] +
+        roles['human'][:num_human] +
+        roles['third'][:num_third]
     )
-    if len(selected_roles) != total_players:
-        raise ValueError("役職の人数とプレイヤー人数が一致しません。")
 
-    # ④割り当て
-    random.shuffle(selected_roles)
-    for idx, (name, uid) in enumerate(zip(player_names, user_ids)):
-        role_id, role_name, role_desc, role_adv = selected_roles[idx]
-        row = idx + 2  # 2行目から始まる
-        player_sheet.update_cell(row, 4, role_id)
-        player_sheet.update_cell(row, 5, role_name)
-        player_sheet.update_cell(row, 6, role_desc)
-        player_sheet.update_cell(row, 7, role_adv)
+    random.shuffle(assigned_roles)
 
-        # ⑤通知
-        message = f"あなたの役職は「{role_name}」です。\n\n説明：{role_desc}\n\nアドバイス：{role_adv}"
-        line_bot_api.push_message(uid, TextSendMessage(text=message))
+    for i, (user_id, name) in enumerate(zip(user_ids, names)):
+        role_id, role_name, role_desc, role_adv = assigned_roles[i]
+        # シートに書き込み
+        player_sheet.update_cell(i+2, 4, role_id)
+        player_sheet.update_cell(i+2, 5, role_name)
+        player_sheet.update_cell(i+2, 6, role_desc)
+        player_sheet.update_cell(i+2, 7, role_adv)
+        # LINE通知
+        message = (
+            f"あなたの役職は「{role_name}」です。\n\n"
+            f"説明：{role_desc}\n\n"
+            f"アドバイス：{role_adv}"
+        )
+        line_bot_api.push_message(user_id, TextSendMessage(text=message))
