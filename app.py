@@ -34,24 +34,32 @@ def handle_message(event):
         reply = f"{name}さんを登録しました。"
 
     elif msg == "夜":
+        # 夜モードONにする
+        set_night_mode("ON")
         sheet = connect_sheet()
-        players = sheet.col_values(1)[1:]  # 名前（ヘッダー除く）
-        user_ids = sheet.col_values(2)[1:]  # user_id（ヘッダー除く）
-
+        players = sheet.col_values(1)[1:]
+        user_ids = sheet.col_values(2)[1:]
         player_list_str = "\n".join(players)
         message_text = (
             "夜の行動です。能力の対象にする参加者を決めて下さい。\n"
             "能力を使わない場合は「なし」と入力してください。\n\n"
             "【参加者リスト】\n" + player_list_str
         )
-
         for uid in user_ids:
             line_bot_api.push_message(uid, TextSendMessage(text=message_text))
-
         reply = "夜の行動を各プレイヤーに送信しました。"
 
     else:
-        reply = f"あなたのメッセージ：{msg}"
+        # 夜モード時のみ、行動を記録
+        if get_night_mode() == "ON":
+            name = get_name_by_user_id(user_id)
+            if name:
+                record_night_action(user_id, name, msg)
+                reply = f"「{msg}」を夜の行動として受け付けました。"
+            else:
+                reply = "参加者として登録されていません。"
+        else:
+            reply = "現在は夜の行動時間ではありません。"
 
     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply))
 
