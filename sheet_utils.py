@@ -93,6 +93,8 @@ def assign_roles_and_notify(line_bot_api):
         except (ValueError, TypeError):
             return 0
 
+    print("B1 raw value:", setting_sheet.acell("B1").value)
+    print("B2 raw value:", setting_sheet.acell("B2").value)
     num_werewolf = parse_int_or_zero(setting_sheet.acell("B1").value)
     num_third = parse_int_or_zero(setting_sheet.acell("B2").value)
 
