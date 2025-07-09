@@ -83,10 +83,12 @@ def assign_roles_and_notify(line_bot_api):
         elif 300 <= role_id < 400:
             roles['third'].append(role)
 
-    # ③ 設定人数の取得
-    num_werewolf = int(setting_sheet.acell("B1").value)
-    num_third = int(setting_sheet.acell("B2").value)
+    # ③設定から人数取得（get_all_valuesを使って安全に取得）
+    settings = setting_sheet.get_all_values()
+    num_werewolf = int(settings[0][1])  # 1行目B列
+    num_third = int(settings[1][1])     # 2行目B列
     num_human = player_count - num_werewolf - num_third
+
 
     # ④ 役職をランダムに割り当て
     random.shuffle(roles['werewolf'])
