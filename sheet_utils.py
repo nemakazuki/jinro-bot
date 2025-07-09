@@ -59,44 +59,36 @@ import random
 
 def assign_roles_and_notify(line_bot_api):
     client = connect_client()
-    player_sheet = client.open("jinro_game").worksheet("プレイヤー一覧")
-    role_sheet = client.open("jinro_game").worksheet("役職一覧")
-    setting_sheet = client.open("jinro_game").worksheet("設定")
+    workbook = client.open("jinro_game")
+    player_sheet = workbook.worksheet("プレイヤー一覧")
+    role_sheet = workbook.worksheet("役職一覧")
+    setting_sheet = workbook.worksheet("設定")
 
-    # ①プレイヤー一覧を取得
-    names = player_sheet.col_values(1)[1:]
-    user_ids = player_sheet.col_values(2)[1:]
+    # ① プレイヤー一覧をまとめて取得
+    player_data = player_sheet.get_all_values()[1:]  # ヘッダー除く
+    names = [row[0] for row in player_data]
+    user_ids = [row[1] for row in player_data]
     player_count = len(names)
 
-    # ②役職一覧を取得・分類
-    role_numbers = role_sheet.col_values(1)[1:]
-
-    roles = {
-        'werewolf': [],
-        'human': [],
-        'third': []
-    }
-
-    for i in range(1, len(role_numbers)+1):
-        role_id = int(role_sheet.cell(i+1, 1).value)
-        role_name = role_sheet.cell(i+1, 2).value
-        role_desc = role_sheet.cell(i+1, 3).value
-        role_adv = role_sheet.cell(i+1, 4).value
-        role_data = (role_id, role_name, role_desc, role_adv)
+    # ② 役職一覧を一括取得
+    role_data_all = role_sheet.get_all_values()[1:]  # ヘッダー除く
+    roles = {'werewolf': [], 'human': [], 'third': []}
+    for row in role_data_all:
+        role_id = int(row[0])
+        role = (role_id, row[1], row[2], row[3])
         if 100 <= role_id < 200:
-            roles['werewolf'].append(role_data)
+            roles['werewolf'].append(role)
         elif 200 <= role_id < 300:
-            roles['human'].append(role_data)
+            roles['human'].append(role)
         elif 300 <= role_id < 400:
-            roles['third'].append(role_data)
+            roles['third'].append(role)
 
-    # ③設定から人数取得
+    # ③ 設定人数の取得
     num_werewolf = int(setting_sheet.acell("B1").value)
     num_third = int(setting_sheet.acell("B2").value)
     num_human = player_count - num_werewolf - num_third
 
-    # ④役職割り当て
-    import random
+    # ④ 役職をランダムに割り当て
     random.shuffle(roles['werewolf'])
     random.shuffle(roles['human'])
     random.shuffle(roles['third'])
@@ -106,16 +98,16 @@ def assign_roles_and_notify(line_bot_api):
         roles['human'][:num_human] +
         roles['third'][:num_third]
     )
-
     random.shuffle(assigned_roles)
 
+    # ⑤ 一括で書き込み準備
+    updates = []
     for i, (user_id, name) in enumerate(zip(user_ids, names)):
         role_id, role_name, role_desc, role_adv = assigned_roles[i]
-        # シートに書き込み
-        player_sheet.update_cell(i+2, 4, role_id)
-        player_sheet.update_cell(i+2, 5, role_name)
-        player_sheet.update_cell(i+2, 6, role_desc)
-        player_sheet.update_cell(i+2, 7, role_adv)
+        updates.append({
+            "row": i + 2,
+            "values": [role_id, role_name, role_desc, role_adv]
+        })
         # LINE通知
         message = (
             f"あなたの役職は「{role_name}」です。\n\n"
@@ -123,3 +115,13 @@ def assign_roles_and_notify(line_bot_api):
             f"アドバイス：{role_adv}"
         )
         line_bot_api.push_message(user_id, TextSendMessage(text=message))
+
+    # ⑥ 一括更新（D列〜G列）
+    cell_list = player_sheet.range(f'D2:G{len(user_ids)+1}')
+    for idx, update in enumerate(updates):
+        base = idx * 4
+        cell_list[base].value = update["values"][0]
+        cell_list[base+1].value = update["values"][1]
+        cell_list[base+2].value = update["values"][2]
+        cell_list[base+3].value = update["values"][3]
+    player_sheet.update_cells(cell_list)
